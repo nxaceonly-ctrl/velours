@@ -179,7 +179,10 @@ nav.tabs button.on{background:#FFE0EA;color:var(--ink)}
 .send .act{width:50px;height:50px;flex:none;font-size:20px}
 
 /* profil */
-.mecard{position:relative;height:min(62vh,520px);flex:none}
+.mecard{position:relative;height:min(58vh,500px);flex:none}
+.mecard .card{touch-action:pan-y}
+.mehead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.list{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .mecard .card{position:absolute;inset:0;transform:rotate(-1.5deg)}
 .menu{display:flex;flex-direction:column;gap:10px;padding:18px 0}
 

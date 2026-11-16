@@ -140,13 +140,23 @@ function safety(p,after){
          else { await API.block(p.id); toast(`${p.name} est bloquée.`); }
          v.remove(); after(); }catch(err){ toast(frErr(err.message)); } };
 }
+function photoTap(c,p){
+  if(!p.photos||p.photos.length<2) return; let ph=0;
+  c.querySelector('.ph').addEventListener('click',e=>{ if(e.target.closest('.more')) return; const r=c.getBoundingClientRect();
+    ph=(ph+(e.clientX>r.left+r.width/2?1:p.photos.length-1))%p.photos.length;
+    c.querySelector('.ph').style.backgroundImage=`url('${p.photos[ph]}')`; c.querySelectorAll('.dots i').forEach((d,i)=>d.classList.toggle('on',i===ph)); });
+}
 function profileView(){
   const v=root.querySelector('#view'); const p=state.me;
-  v.innerHTML=`<div class="list"><h2 class="ttl">Mon profil</h2><p class="note" style="margin-bottom:14px">voilà ce que les autres voient</p>
+  const many=(p.photos||[]).length>1;
+  v.innerHTML=`<div class="list"><div class="mehead"><h2 class="ttl">Mon profil</h2><button class="chip" id="edit">✏️ Modifier</button></div>
+    <p class="note" style="margin-bottom:14px">${many?'touche la photo pour voir les suivantes':'voilà ce que les autres voient'}</p>
     <div class="mecard"><article class="card">${cardHTML({...p,km:0})}</article></div>
     ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--hand);font-size:22px;color:var(--ink)">${esc(p.prompt_a)}</p></div>`:''}
-    <div class="menu"><button class="btn full" id="edit">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
-  v.querySelector('#edit').onclick=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };
+    <div class="menu"><button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
+  photoTap(v.querySelector('.mecard .card'),p);
+  const edit=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };
+  v.querySelector('#edit').onclick=edit; v.querySelector('#edit2').onclick=edit;
   v.querySelector('#out').onclick=async()=>{ await API.signOut(); state.me=null; welcome(); };
 }
 
