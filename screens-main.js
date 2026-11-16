@@ -152,7 +152,7 @@ function profileView(){
   v.innerHTML=`<div class="list"><div class="mehead"><h2 class="ttl">Mon profil</h2><button class="chip" id="edit">Modifier</button></div>
     <p class="note" style="margin-bottom:14px">${many?'touche la photo pour voir les suivantes':'voilà ce que les autres voient'}</p>
     <div class="mecard"><article class="card">${cardHTML({...p,km:0})}</article></div>
-    ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--hand);font-size:22px;color:var(--text)">${esc(p.prompt_a)}</p></div>`:''}
+    ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--display);font-style:italic;font-size:22px;color:var(--text)">${esc(p.prompt_a)}</p></div>`:''}
     <div class="menu"><button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
   photoTap(v.querySelector('.mecard .card'),p);
   const edit=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };
