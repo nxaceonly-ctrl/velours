@@ -90,3 +90,6 @@ create policy "ajouter ses photos" on storage.objects for insert to authenticate
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "supprimer ses photos" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Rafraîchir l'API
+notify pgrst, 'reload schema';
