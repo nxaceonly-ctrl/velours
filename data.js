@@ -75,7 +75,7 @@ const Online = {
   init(){ sb=window.supabase.createClient(CFG.url,CFG.key); },
   check(r){ if(r.error) throw new Error(frErr(r.error.message)); return r.data; },
   async session(){ const {data}=await sb.auth.getSession(); me=data.session?.user?.id||null; return me; },
-  async signUp(email,pw){ const r=this.check(await sb.auth.signUp({email,password:pw}));
+  async signUp(email,pw){ const r=this.check(await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:location.origin+location.pathname}}));
     if(!r.session) throw Object.assign(new Error('Compte créé ! Ouvre l\'e-mail de confirmation que tu viens de recevoir, puis reviens te connecter.'),{ok:true});
     me=r.user.id; return r.user; },
   async signIn(email,pw){ const r=this.check(await sb.auth.signInWithPassword({email,password:pw})); me=r.user.id; return r.user; },
