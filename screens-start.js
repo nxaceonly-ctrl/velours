@@ -11,9 +11,11 @@ function toast(msg){ const t=document.createElement('div'); t.className='toast';
 
 /* Logo : deux cœurs qui se chevauchent */
 const HEART='M50 88 C20 66 6 50 6 32 C6 18 17 8 30 8 C40 8 46 14 50 21 C54 14 60 8 70 8 C83 8 94 18 94 32 C94 50 80 66 50 88 Z';
-const logo = (cls='logo') => `<svg class="${cls}" viewBox="0 0 170 130" aria-hidden="true">
-  <g transform="translate(14 14)"><path class="h1" d="${HEART}" fill="rgba(255,111,125,.16)" stroke="#FF6F7D" stroke-width="4" stroke-linejoin="round"/></g>
-  <g transform="translate(58 14)"><path class="h2" d="${HEART}" fill="rgba(226,184,119,.12)" stroke="#E2B877" stroke-width="4" stroke-linejoin="round"/></g>
+const logo = (cls='logo') => `<svg class="${cls}" viewBox="0 0 120 120" aria-hidden="true">
+  <defs><linearGradient id="vg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8A93"/><stop offset="1" stop-color="#E2B877"/></linearGradient></defs>
+  <circle class="h1" cx="60" cy="62" r="50" fill="none" stroke="#E2B877" stroke-opacity=".7" stroke-width="1.2"/>
+  <text class="h2" x="60" y="88" text-anchor="middle" font-family="Instrument Serif, Didot, Georgia, serif" font-style="italic" font-size="80" fill="url(#vg)">V</text>
+  <path class="spark" d="M60 4 L62.2 9.8 L68 12 L62.2 14.2 L60 20 L57.8 14.2 L52 12 L57.8 9.8 Z" fill="#FF6F7D"/>
 </svg>`;
 
 const state = { draft:null, step:0, deck:[], filter:'Toutes', tab:'discover', poll:null, me:null, editing:false };

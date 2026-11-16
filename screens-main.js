@@ -49,7 +49,7 @@ async function discover(){
 function renderDeck(){
   const deck=root.querySelector('#deck'); if(!deck) return; deck.innerHTML='';
   if(!state.deck.length){ deck.innerHTML=`<div class="empty">${logo('')}<h3>Tu as vu tout le monde</h3><p class="sub">De nouvelles filles s'inscrivent tous les jours. Reviens un peu plus tard ♡</p></div>`;
-    deck.querySelector('svg').style.cssText='width:110px;height:84px'; return; }
+    deck.querySelector('svg').style.cssText='width:90px;height:90px'; return; }
   state.deck.slice(0,3).reverse().forEach((p,i,arr)=>{
     const depth=arr.length-1-i; const c=document.createElement('article'); c.className='card';
     c.innerHTML=cardHTML(p,{menu:depth===0})+'<div class="stamp yes">J\'aime</div><div class="stamp no">Bof</div><div class="stamp star">Coup de cœur</div>';

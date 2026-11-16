@@ -44,10 +44,12 @@ button{cursor:pointer}
 /* ---------- intro ---------- */
 .intro{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;background:radial-gradient(circle at 50% 42%,rgba(255,111,125,.16),transparent 60%);transition:opacity .9s, filter .9s}
 .intro.out{opacity:0;filter:blur(10px);pointer-events:none}
-.logo{width:150px;height:115px;overflow:visible}
+.logo{width:132px;height:132px;overflow:visible}
 .logo .h1,.logo .h2{transform-box:fill-box;transform-origin:center}
-.intro .h1,.intro .h2{stroke-dasharray:300;stroke-dashoffset:300;animation:draw 2s cubic-bezier(.6,.05,.3,1) .3s forwards}
-.intro .h2{animation-delay:.6s}
+.intro .h1{stroke-dasharray:320;stroke-dashoffset:320;animation:draw 2.2s cubic-bezier(.6,.05,.3,1) .3s forwards}
+.intro .h2{animation:pop 1.6s cubic-bezier(.2,.7,.2,1) .9s both}
+.intro .spark{transform-box:fill-box;transform-origin:center;animation:twinkle 1.2s ease 2.2s both}
+@keyframes twinkle{0%{opacity:0;transform:scale(0) rotate(-90deg)}60%{opacity:1;transform:scale(1.4)}100%{opacity:1;transform:none}}
 @keyframes draw{to{stroke-dashoffset:0}}
 .intro .logo{animation:glow 1.6s ease 2.2s both}
 @keyframes glow{0%{filter:none}50%{filter:drop-shadow(0 0 18px rgba(255,111,125,.8))}100%{filter:drop-shadow(0 0 8px rgba(255,111,125,.35))}}
@@ -98,7 +100,7 @@ select.input option{background:var(--plum)}
 
 /* ---------- accueil connexion ---------- */
 .welcome{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:16px;padding-block:20px}
-.welcome .logo{width:110px;height:84px}
+.welcome .logo{width:104px;height:104px}
 .welcome .word{font-size:64px !important}
 .welcome .btn{width:100%;max-width:340px}
 .demo{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
@@ -106,7 +108,7 @@ select.input option{background:var(--plum)}
 /* ---------- app ---------- */
 .head{display:flex;align-items:center;justify-content:space-between;padding-block:12px 6px}
 .brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-style:italic;font-size:30px}
-.brand svg{width:36px;height:28px}
+.brand svg{width:32px;height:32px}
 .view{flex:1;min-height:0;display:flex;flex-direction:column}
 .filters{display:flex;gap:8px;overflow-x:auto;padding-block:6px 14px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
