@@ -9,7 +9,7 @@ const IDENTITIES = ['Lesbienne','Bi','Pan','Queer','En questionnement','Autre'];
 const LOOKING = ['Une histoire d\'amour','Des rencontres, on verra','De nouvelles amies'];
 const INTERESTS = ['☕ Cafés','🎤 Karaoké','🧗 Escalade','📚 Lecture','🎮 Jeux vidéo','🐱 Chats','🐶 Chiens','🍷 Apéros','🎨 Art','🌱 Jardinage','🏳️‍🌈 Militantisme','🎬 Séries','🎶 Concerts','🏖️ Voyages','🍳 Cuisine','💃 Danse','🏋️ Sport','📸 Photo','🧘 Yoga','🎲 Jeux de société'];
 const PROMPTS = ['Mon dimanche parfait…','Je craque pour…','Le premier date idéal…','Ma playlist du moment…','On s\'entendra bien si…'];
-const COLORS = [['#FF8FB1','#FF4F86'],['#C3B1FF','#8C6BFF'],['#FFD27A','#FFAA2B'],['#9FE3C9','#3FB98C'],['#FFB199','#FF6F4F'],['#9CD3FF','#4FA3FF']];
+const COLORS = [['#6B2346','#2A1630'],['#8E3A4F','#2A1630'],['#5A2F5E','#1E1024'],['#9C5A3C','#2A1630'],['#7A2E5E','#1A0D1C'],['#4E2A55','#1A0D1C']];
 
 const SEED = [
   {id:'s1',name:'Inès',birthdate:'1998-03-02',identity:'Lesbienne',looking:LOOKING[0],city:'Lyon 1er',bio:'Céramiste le jour, karaoké le jeudi. Je te laisse choisir la chanson 🎤',prompt_q:PROMPTS[2],prompt_a:'Un atelier poterie, puis une glace même s\'il fait froid.',interests:['🎤 Karaoké','🎨 Art','🍷 Apéros'],likesYou:true,km:2},

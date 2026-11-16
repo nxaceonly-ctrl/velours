@@ -20,7 +20,7 @@ function main(tab){
 function cardHTML(p, opts={}){
   const n=Math.max(1,(p.photos||[]).length);
   const doodles=hasPh(p)?'':DOODLES.map((d,i)=>`<span class="doodle" style="left:${[12,78,20][i]}%;top:${[18,30,70][i]}%;color:#fff;opacity:.85">${d}</span>`).join('');
-  return `<div class="ph" style="${phStyle(p)}">${hasPh(p)?'':`<div class="ini">${esc(p.name[0])}</div>`}${doodles}
+  return `<div class="ph" style="${phStyle(p)}">${hasPh(p)?'':`<div class="ini">${esc(p.name[0])}</div>`}
       ${n>1?`<div class="dots">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}
       ${opts.menu?'<button class="more" aria-label="Signaler ou bloquer">⋯</button>':''}
       <span class="look">${esc(p.looking||'')}</span></div>
@@ -111,7 +111,7 @@ async function messagesView(){
   l.querySelectorAll('.row').forEach(b=>b.onclick=()=>chat(m[+b.dataset.i].p));
 }
 async function chat(p){
-  page(`<div class="page" style="padding-bottom:0"><div class="top"><button class="back" id="bk" aria-label="Retour">←</button>${avatar(p)}<div style="flex:1;min-width:0"><b style="font-family:var(--round);font-size:20px">${esc(p.name)}</b><div class="meta">${esc(p.city||'')}</div></div><button class="back" id="more" aria-label="Signaler ou bloquer">⋯</button></div>
+  page(`<div class="page" style="padding-bottom:0"><div class="top"><button class="back" id="bk" aria-label="Retour">←</button>${avatar(p)}<div style="flex:1;min-width:0"><b style="font-family:var(--display);font-size:20px">${esc(p.name)}</b><div class="meta">${esc(p.city||'')}</div></div><button class="back" id="more" aria-label="Signaler ou bloquer">⋯</button></div>
     <div class="chat" id="c"></div>
     <form class="send" id="f"><input class="input" id="t" maxlength="1000" placeholder="Écris-lui un petit mot…" autocomplete="off"><button class="act like" aria-label="Envoyer">➤</button></form></div>`);
   root.querySelector('#bk').onclick=()=>main('messages');
@@ -149,10 +149,10 @@ function photoTap(c,p){
 function profileView(){
   const v=root.querySelector('#view'); const p=state.me;
   const many=(p.photos||[]).length>1;
-  v.innerHTML=`<div class="list"><div class="mehead"><h2 class="ttl">Mon profil</h2><button class="chip" id="edit">✏️ Modifier</button></div>
+  v.innerHTML=`<div class="list"><div class="mehead"><h2 class="ttl">Mon profil</h2><button class="chip" id="edit">Modifier</button></div>
     <p class="note" style="margin-bottom:14px">${many?'touche la photo pour voir les suivantes':'voilà ce que les autres voient'}</p>
     <div class="mecard"><article class="card">${cardHTML({...p,km:0})}</article></div>
-    ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--hand);font-size:22px;color:var(--ink)">${esc(p.prompt_a)}</p></div>`:''}
+    ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--hand);font-size:22px;color:var(--text)">${esc(p.prompt_a)}</p></div>`:''}
     <div class="menu"><button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
   photoTap(v.querySelector('.mecard .card'),p);
   const edit=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };

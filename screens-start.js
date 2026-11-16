@@ -12,8 +12,8 @@ function toast(msg){ const t=document.createElement('div'); t.className='toast';
 /* Logo : deux cœurs qui se chevauchent */
 const HEART='M50 88 C20 66 6 50 6 32 C6 18 17 8 30 8 C40 8 46 14 50 21 C54 14 60 8 70 8 C83 8 94 18 94 32 C94 50 80 66 50 88 Z';
 const logo = (cls='logo') => `<svg class="${cls}" viewBox="0 0 170 130" aria-hidden="true">
-  <g transform="translate(14 14)"><path class="h1" d="${HEART}" fill="#FF4F86" stroke="#2A1638" stroke-width="5" stroke-linejoin="round"/></g>
-  <g transform="translate(58 14)"><path class="h2" d="${HEART}" fill="#A98BFF" stroke="#2A1638" stroke-width="5" stroke-linejoin="round" style="mix-blend-mode:multiply"/></g>
+  <g transform="translate(14 14)"><path class="h1" d="${HEART}" fill="rgba(255,111,125,.16)" stroke="#FF6F7D" stroke-width="4" stroke-linejoin="round"/></g>
+  <g transform="translate(58 14)"><path class="h2" d="${HEART}" fill="rgba(226,184,119,.12)" stroke="#E2B877" stroke-width="4" stroke-linejoin="round"/></g>
 </svg>`;
 
 const state = { draft:null, step:0, deck:[], filter:'Toutes', tab:'discover', poll:null, me:null, editing:false };
@@ -22,10 +22,10 @@ function page(html){ stopPoll(); root.innerHTML=html; }
 
 function intro(){
   const el=document.createElement('section'); el.className='intro'; el.setAttribute('aria-label','Ouverture');
-  const conf=Array.from({length:14},(_,i)=>{const a=i/14*Math.PI*2, r=110+Math.random()*60; return `<b style="--x:${Math.round(Math.cos(a)*r)}px;--y:${Math.round(Math.sin(a)*r)}px;--r:${(Math.random()*80-40)|0}deg;color:${['#FF4F86','#A98BFF','#FFC845'][i%3]}">${i%2?'♥':'✦'}</b>`}).join('');
+  const conf=Array.from({length:14},(_,i)=>{const a=i/14*Math.PI*2, r=110+Math.random()*60; return `<b style="--x:${Math.round(Math.cos(a)*r)}px;--y:${Math.round(Math.sin(a)*r)}px;--r:${(Math.random()*80-40)|0}deg;color:${['#E2B877','#FF6F7D','#F6E6E1'][i%3]}">✦</b>`}).join('');
   el.innerHTML=`<button class="skip">Passer</button><div class="confetti">${conf}</div>${logo()}
-    <h1 class="word" aria-label="velours">${[...'velours'].map((c,i)=>`<span style="animation-delay:${(1.5+i*.08).toFixed(2)}s">${c}</span>`).join('')}</h1>
-    <p class="tagline">entre filles qui s'aiment ♡</p>
+    <h1 class="word" aria-label="velours">${[...'velours'].map((c,i)=>`<span style="animation-delay:${(1.9+i*.1).toFixed(2)}s">${c}</span>`).join('')}</h1>
+    <p class="tagline">entre filles qui s'aiment</p>
     <button class="btn pink">C'est parti !</button>`;
   document.body.appendChild(el);
   let done=false;
@@ -45,8 +45,8 @@ async function start(){
 
 function welcome(err){
   page(`<div class="welcome">${logo()}
-    <div class="word" style="font-size:52px">velours</div>
-    <p class="note">ici, on se trouve entre nous ♡</p>
+    <div class="word">velours</div>
+    <p class="note">ici, on se trouve entre nous</p>
     <p class="sub" style="max-width:30ch">Rencontre des filles qui aiment les filles, près de chez toi. Gratuit, bienveillant et réservé aux 18 ans et plus.</p>
     ${err?`<div class="err">${esc(err)}</div>`:''}
     <button class="btn pink" id="toSignup">Créer mon compte</button>
