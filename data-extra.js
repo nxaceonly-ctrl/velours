@@ -60,3 +60,34 @@ Object.assign(Online, {
       .subscribe(); }catch(e){}
   }
 });
+
+/* ---------- v3 : supprimer son compte, « Vu », écrit…, mode discret ---------- */
+Object.assign(Demo, {
+  async markRead(){},
+  async setDiscreet(val){ const d=this.db(); if(d.profiles[d.session]) d.profiles[d.session].discreet=val; this.save(d); },
+  async deleteAccount(){ const d=this.db(); const id=d.session; delete d.profiles[id];
+    for(const k of Object.keys(d.users)) if(d.users[k].id===id) delete d.users[k];
+    d.likes=d.likes.filter(l=>l.liker!==id); d.messages=[]; d.session=null; this.save(d); },
+  typing(id,cb){ this._typing={id,cb}; return {send(){},stop:()=>{ this._typing=null; }}; }
+});
+const demoSend = Demo.send;
+Demo.send = async function(id,body){
+  await demoSend.call(this,id,body);
+  setTimeout(()=>{ if(this._typing&&this._typing.id===id) this._typing.cb(); },400);
+  setTimeout(()=>{ const d=this.db(); d.messages.forEach(m=>{ if(m.pair===id&&m.sender===d.session&&!m.read_at) m.read_at=new Date().toISOString(); }); this.save(d); },1500);
+};
+Object.assign(Online, {
+  async markRead(other){ try{ await sb.rpc('mark_read',{other}); }catch(e){} },
+  async setDiscreet(val){ this.check(await sb.from('profiles').update({discreet:val}).eq('id',me)); },
+  async deleteAccount(){
+    const rm=async(bucket,prefix)=>{ try{ const r=await sb.storage.from(bucket).list(prefix,{limit:1000});
+      const files=[], dirs=[]; (r.data||[]).forEach(x=>x.id?files.push(`${prefix}/${x.name}`):dirs.push(`${prefix}/${x.name}`));
+      if(files.length) await sb.storage.from(bucket).remove(files); for(const d of dirs) await rm(bucket,d); }catch(e){} };
+    await rm('photos',me); await rm('verifications',me); await rm('chat',me);
+    this.check(await sb.rpc('delete_my_account')); await sb.auth.signOut(); me=null; },
+  typing(id,cb){
+    const ch=sb.channel(`typing-${[me,id].sort().join('-')}`,{config:{broadcast:{self:false}}});
+    ch.on('broadcast',{event:'typing'},({payload})=>{ if(payload&&payload.from===id) cb(); }).subscribe();
+    let last=0; return { send(){ const n=Date.now(); if(n-last<2000) return; last=n; ch.send({type:'broadcast',event:'typing',payload:{from:me}}); }, stop(){ sb.removeChannel(ch); } };
+  }
+});

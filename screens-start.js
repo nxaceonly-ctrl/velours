@@ -19,7 +19,7 @@ const logo = (cls='logo') => `<svg class="${cls}" viewBox="0 0 120 120" aria-hid
 </svg>`;
 
 const state = { draft:null, step:0, deck:[], filter:'Toutes', tab:'discover', poll:null, me:null, editing:false };
-function stopPoll(){ if(state.poll){ clearInterval(state.poll); state.poll=null; } state.chatWith=null; if(state.rec){ try{state.rec.stop()}catch(e){} state.rec=null; } }
+function stopPoll(){ if(state.poll){ clearInterval(state.poll); state.poll=null; } state.chatWith=null; if(state.typ){ try{state.typ.stop()}catch(e){} state.typ=null; } if(state.rec){ try{state.rec.stop()}catch(e){} state.rec=null; } }
 function page(html){ stopPoll(); root.innerHTML=html; }
 
 function intro(){

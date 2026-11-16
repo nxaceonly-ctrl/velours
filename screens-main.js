@@ -109,9 +109,20 @@ async function messagesView(){
   l.innerHTML=m.map(({p,last},i)=>`<button class="row" data-i="${i}">${avatar(p)}<div><b>${esc(p.name)}</b><p>${last?(last.kind==='photo'?'📷 Photo':last.kind==='audio'?'🎤 Message vocal':esc(last.body)):'Nouveau match ! Dis-lui bonjour 👋'}</p></div>${last?`<time class="${last.sender===p.id&&last.created_at>seen.get(p.id)?'new':''}">${hhmm(last.created_at)}</time>`:''}</button>`).join('');
   l.querySelectorAll('.row').forEach(b=>b.onclick=()=>chat(m[+b.dataset.i].p));
 }
+function icebreakers(p){
+  const out=[]; const it=(p.interests||[]).map(x=>x.replace(/^\S+\s/,''));
+  if(p.prompt_a) out.push(`« ${p.prompt_a.slice(0,60)}${p.prompt_a.length>60?'…':''} » : j'ai souri en lisant ça, raconte-moi !`);
+  if(it[0]) out.push(`Toi aussi tu aimes ${it[0].toLowerCase()} ? C'est quoi ton meilleur souvenir avec ça ?`);
+  const duo=[['un café','un verre'],['une expo','un concert'],['un brunch','un pique-nique'],['une balade','un ciné']][Math.abs(hash(p.id))%4];
+  out.push(`Pour un premier rendez-vous, tu serais plutôt ${duo[0]} ou ${duo[1]} ?`);
+  if(out.length<3&&it[1]) out.push(`J'ai vu ${it[1].toLowerCase()} sur ton profil, tu m'en dis plus ?`);
+  return out.slice(0,3);
+}
 async function chat(p){
   page(`<div class="page" style="padding-bottom:0"><div class="top"><button class="back" id="bk" aria-label="Retour">←</button>${avatar(p)}<div style="flex:1;min-width:0"><b style="font-family:var(--display);font-size:22px">${esc(p.name)}</b> ${p.verified?VERIF_ICON:''}<div class="meta">${esc(p.city||'')}</div></div><button class="back" id="more" aria-label="Signaler ou bloquer">⋯</button></div>
     <div class="chat" id="c"></div>
+    <div class="typing" id="ty" hidden><i></i><i></i><i></i> ${esc(p.name)} écrit…</div>
+    <div class="ice" id="ice" hidden></div>
     <div class="recbar" id="rb" hidden><span class="dot"></span><span id="rt">0:00</span><button class="link" id="rc" type="button">Annuler</button><button class="btn pink" id="rs" type="button">Envoyer</button></div>
     <form class="send" id="f">
       <label class="act sm2" for="pic" aria-label="Envoyer une photo">📷<input id="pic" type="file" accept="image/*" hidden></label>
@@ -130,8 +141,16 @@ async function chat(p){
         const cls=`bub ${m.mine?'me':'her'}`;
         if(m.kind==='photo') return `<div class="${cls} media"><img src="${esc(urls[m.media_path]||'')}" alt="Photo" loading="lazy"></div>`;
         if(m.kind==='audio') return `<div class="${cls} media"><audio controls preload="metadata" src="${esc(urls[m.media_path]||'')}"></audio></div>`;
-        return `<div class="${cls}">${esc(m.body)}</div>`; }).join('');
+        return `<div class="${cls}">${esc(m.body)}</div>`; }).join('')
+        +(ms.length&&ms[ms.length-1].mine&&ms[ms.length-1].read_at?'<div class="seenmark">Vu</div>':'');
+      if(ms.length&&!ms[ms.length-1].mine) root.querySelector('#ty').hidden=true;
+      if(ms.some(m=>!m.mine&&!m.read_at)) API.markRead(p.id);
+      const ice=root.querySelector('#ice'); ice.hidden=ms.length>0;
+      if(!ms.length){ ice.innerHTML='<p class="sub">Besoin d\'une idée pour commencer ?</p>'+icebreakers(p).map(t=>`<button class="chip" type="button">${esc(t)}</button>`).join('');
+        ice.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ const t=root.querySelector('#t'); t.value=c.textContent; t.focus(); }); }
       box.scrollTop=box.scrollHeight; seen.set(p.id); }catch(e){} };
+  let tyT=null; state.typ=API.typing(p.id,()=>{ const ty=root.querySelector('#ty'); if(!ty) return; ty.hidden=false; clearTimeout(tyT); tyT=setTimeout(()=>{ if(root.querySelector('#ty')) root.querySelector('#ty').hidden=true; },3500); box.scrollTop=box.scrollHeight; });
+  root.querySelector('#t').addEventListener('input',()=>state.typ&&state.typ.send());
   await load(); state.poll=setInterval(load,3000);
   const sendMedia=async(kind,blob)=>{ toast(kind==='photo'?'Envoi de la photo…':'Envoi du vocal…');
     try{ await API.sendMedia(p.id,kind,blob); sig=''; await load(); }catch(err){ toast(frErr(err.message)); } };
@@ -176,6 +195,21 @@ function photoTap(c,p){
     ph=(ph+(e.clientX>r.left+r.width/2?1:p.photos.length-1))%p.photos.length;
     c.querySelector('.ph').style.backgroundImage=`url('${p.photos[ph]}')`; c.querySelectorAll('.dots i').forEach((d,i)=>d.classList.toggle('on',i===ph)); });
 }
+function deleteSheet(){
+  const v=document.createElement('div'); v.className='veil';
+  v.innerHTML=`<form class="sheet" role="dialog" aria-label="Supprimer mon compte"><h3>Supprimer mon compte</h3>
+    <p class="sub">Ton profil, tes photos, tes matchs et tes messages seront effacés pour de bon. Ça ne peut pas être annulé.</p>
+    <div class="field"><label for="cf">Écris SUPPRIMER pour confirmer</label><input class="input" id="cf" autocomplete="off" autocapitalize="characters"></div>
+    <div id="dm"></div>
+    <button class="btn pink full" type="submit">Supprimer définitivement</button><button class="link" type="button" id="cx">Annuler</button></form>`;
+  document.body.appendChild(v);
+  v.querySelector('#cx').onclick=()=>v.remove(); v.onclick=e=>{ if(e.target===v) v.remove(); };
+  v.querySelector('form').onsubmit=async e=>{ e.preventDefault();
+    if(v.querySelector('#cf').value.trim().toUpperCase()!=='SUPPRIMER'){ v.querySelector('#dm').innerHTML='<div class="err">Écris SUPPRIMER en entier pour confirmer.</div>'; return; }
+    const b=v.querySelector('[type=submit]'); b.disabled=true; b.textContent='Suppression…';
+    try{ await API.deleteAccount(); v.remove(); state.me=null; welcome(); toast('Ton compte a été supprimé. Prends soin de toi ♡'); }
+    catch(err){ b.disabled=false; b.textContent='Supprimer définitivement'; v.querySelector('#dm').innerHTML=`<div class="err">${esc(frErr(err.message))}</div>`; } };
+}
 function profileView(){
   const v=root.querySelector('#view'); const p=state.me;
   const many=(p.photos||[]).length>1;
@@ -187,12 +221,16 @@ function profileView(){
       <button class="row" id="vrf">${VERIF_ICON}<div><b>${p.verified?'Profil vérifié':'Faire vérifier mon profil'}</b><p>${p.verified?'Ton badge doré est visible':'Un selfie, et tu as le badge doré'}</p></div></button>
       <button class="row" id="ntf"><span class="ico">🔔</span><div><b>Notifications</b><p>${ls.get('velours-push',false)?'Activées sur ce téléphone':'Être prévenue des matchs et messages'}</p></div></button>
       <button class="row" id="adm" hidden><span class="ico">🛡️</span><div><b>Modération</b><p>Signalements, vérifications, membres</p></div></button>
-      <button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
+      <label class="row toggle"><span class="ico">🕶️</span><div><b>Mode discret</b><p>Seules les filles que tu as likées peuvent voir ton profil</p></div><input type="checkbox" id="disc" ${p.discreet?'checked':''}></label>
+      <button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button>
+      <button class="link" id="del" style="color:var(--coral)">Supprimer mon compte</button></div></div>`;
   photoTap(v.querySelector('.mecard .card'),p);
   const edit=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };
   v.querySelector('#edit').onclick=edit; v.querySelector('#edit2').onclick=edit;
   v.querySelector('#out').onclick=async()=>{ await API.signOut(); state.me=null; welcome(); };
   v.querySelector('#vrf').onclick=()=>verifyScreen();
+  v.querySelector('#disc').onchange=async e=>{ const on=e.target.checked; try{ await API.setDiscreet(on); state.me.discreet=on; toast(on?'Mode discret activé 🕶️':'Mode discret désactivé'); }catch(err){ e.target.checked=!on; toast(frErr(err.message)); } };
+  v.querySelector('#del').onclick=()=>deleteSheet();
   v.querySelector('#ntf').onclick=()=>enablePush();
   v.querySelector('#adm').onclick=()=>adminScreen();
   API.isAdmin().then(a=>{ const b=v.querySelector('#adm'); if(b) b.hidden=!a; });
