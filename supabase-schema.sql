@@ -65,30 +65,30 @@ alter table public.blocks   enable row level security;
 alter table public.reports  enable row level security;
 alter table public.messages enable row level security;
 
-create policy "profils visibles par les membres" on public.profiles for select to authenticated using (true);
-create policy "créer son profil"   on public.profiles for insert to authenticated with check (id = auth.uid());
-create policy "modifier son profil" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
-create policy "supprimer son profil" on public.profiles for delete to authenticated using (id = auth.uid());
+create policy "p_select" on public.profiles for select to authenticated using (true);
+create policy "p_insert" on public.profiles for insert to authenticated with check (id = auth.uid());
+create policy "p_update" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+create policy "p_delete" on public.profiles for delete to authenticated using (id = auth.uid());
 
-create policy "voir ses likes" on public.likes for select to authenticated using (liker = auth.uid() or likee = auth.uid());
-create policy "liker"          on public.likes for insert to authenticated with check (liker = auth.uid() and likee <> auth.uid());
-create policy "changer d'avis" on public.likes for update to authenticated using (liker = auth.uid());
+create policy "l_select" on public.likes for select to authenticated using (liker = auth.uid() or likee = auth.uid());
+create policy "l_insert" on public.likes for insert to authenticated with check (liker = auth.uid() and likee <> auth.uid());
+create policy "l_update" on public.likes for update to authenticated using (liker = auth.uid());
 
-create policy "voir ses blocages" on public.blocks for select to authenticated using (blocker = auth.uid() or blocked = auth.uid());
-create policy "bloquer"           on public.blocks for insert to authenticated with check (blocker = auth.uid());
+create policy "b_select" on public.blocks for select to authenticated using (blocker = auth.uid() or blocked = auth.uid());
+create policy "b_insert" on public.blocks for insert to authenticated with check (blocker = auth.uid());
 
-create policy "signaler" on public.reports for insert to authenticated with check (reporter = auth.uid());
+create policy "r_insert" on public.reports for insert to authenticated with check (reporter = auth.uid());
 
-create policy "lire ses messages" on public.messages for select to authenticated
+create policy "m_select" on public.messages for select to authenticated
   using (sender = auth.uid() or recipient = auth.uid());
-create policy "écrire à un match" on public.messages for insert to authenticated
+create policy "m_insert" on public.messages for insert to authenticated
   with check (sender = auth.uid() and public.is_match(auth.uid(), recipient));
 
 -- Photos
 insert into storage.buckets (id, name, public) values ('photos', 'photos', true) on conflict (id) do nothing;
-create policy "ajouter ses photos" on storage.objects for insert to authenticated
+create policy "ph_insert" on storage.objects for insert to authenticated
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "supprimer ses photos" on storage.objects for delete to authenticated
+create policy "ph_delete" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- Rafraîchir l'API
