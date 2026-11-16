@@ -3,5 +3,6 @@
 // La clé "anon / publishable" est faite pour être publique : la sécurité vient des règles de la base.
 window.VELOURS_CONFIG = {
   url: 'https://hmscauwtqvzjfdzzmsdf.supabase.co',
-  key: 'sb_publishable_s4iXNDGA8m-QZMULFtGo3A_MyCZEVef'
+  key: 'sb_publishable_s4iXNDGA8m-QZMULFtGo3A_MyCZEVef',
+  push: 'BKAkN8ZETSYLmNhgiArHNa1D3Vo2tEH9b71BEYDRHGJ5O1d7mCTIMXNDjbOHv6X3RnCl61-kkg-YAvs854sVDxw'
 };

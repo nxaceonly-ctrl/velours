@@ -19,7 +19,7 @@ const logo = (cls='logo') => `<svg class="${cls}" viewBox="0 0 120 120" aria-hid
 </svg>`;
 
 const state = { draft:null, step:0, deck:[], filter:'Toutes', tab:'discover', poll:null, me:null, editing:false };
-function stopPoll(){ if(state.poll){ clearInterval(state.poll); state.poll=null; } }
+function stopPoll(){ if(state.poll){ clearInterval(state.poll); state.poll=null; } state.chatWith=null; if(state.rec){ try{state.rec.stop()}catch(e){} state.rec=null; } }
 function page(html){ stopPoll(); root.innerHTML=html; }
 
 function intro(){
@@ -41,8 +41,13 @@ async function start(){
     if(!s) return welcome();
     const p=await API.myProfile();
     if(!p){ state.draft=blankDraft(); state.step=1; state.editing=false; return onboarding(); }
-    state.me=p; main('discover');
+    if(p.banned) return suspended();
+    state.me=p; registerSW(); if(ONLINE) startLive(); main('discover');
   }catch(e){ welcome(frErr(e.message)); }
+}
+function suspended(){
+  page(`<div class="welcome">${logo()}<h1 class="q">Compte suspendu</h1><p class="sub" style="max-width:32ch">Ton compte a été suspendu après des signalements. Ton profil n'est plus visible.</p><button class="btn" id="out">Me déconnecter</button></div>`);
+  root.querySelector('#out').onclick=async()=>{ await API.signOut(); welcome(); };
 }
 
 function welcome(err){

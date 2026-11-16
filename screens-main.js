@@ -11,10 +11,10 @@ function main(tab){
   state.tab=tab;
   page(`<header class="head"><div class="brand">${logo('')}<span>velours</span></div>${ONLINE?'':'<span class="demo">Démo</span>'}</header>
     <section class="view" id="view"></section>
-    <nav class="tabs">${TABS.map(([k,l])=>`<button data-t="${k}" class="${k===tab?'on':''}">${ICON[k]}${l}${k==='matches'?'<span class="badge" id="mb" hidden></span>':''}</button>`).join('')}</nav>`);
+    <nav class="tabs">${TABS.map(([k,l])=>`<button data-t="${k}" class="${k===tab?'on':''}">${ICON[k]}${l}${k==='matches'?'<span class="badge" id="mb" hidden></span>':''}${k==='messages'?'<span class="badge" id="msb" hidden></span>':''}</button>`).join('')}</nav>`);
   root.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>main(b.dataset.t));
   ({discover,matches:matchesView,messages:messagesView,profile:profileView})[tab]();
-  API.matches().then(m=>{ const b=root.querySelector('#mb'); if(b&&m.length){ b.hidden=false; b.textContent=m.length; } }).catch(()=>{});
+  refreshBadges();
 }
 
 function cardHTML(p, opts={}){
@@ -24,7 +24,7 @@ function cardHTML(p, opts={}){
       ${n>1?`<div class="dots">${Array.from({length:n},(_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:''}
       ${opts.menu?'<button class="more" aria-label="Signaler ou bloquer">⋯</button>':''}
       <span class="look">${esc(p.looking||'')}</span></div>
-    <div class="info"><h2>${esc(p.name)} <small>${age(p.birthdate)}</small></h2>
+    <div class="info"><h2>${esc(p.name)} <small>${age(p.birthdate)}</small>${p.verified?VERIF_ICON:''}</h2>
       <div class="meta">${esc(p.identity||'')} · ${esc(p.city||'')}${p.km?` · à ${p.km} km`:''}</div>
       <p class="bio">${esc(p.bio)}</p>
       <div class="tags">${(p.interests||[]).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div>`;
@@ -32,23 +32,22 @@ function cardHTML(p, opts={}){
 
 async function discover(){
   const v=root.querySelector('#view');
-  const F=['Toutes',...LOOKING];
-  v.innerHTML=`<div class="filters">${F.map(f=>`<button class="chip ${state.filter===f?'on':''}">${esc(f)}</button>`).join('')}</div>
+  v.innerHTML=`<button class="filterbar" id="fb"><span>⚙︎ Filtres</span><small>${esc(filterSummary())}</small></button>
     <div class="deck" id="deck"></div>
     <div class="actions"><button class="act lg" id="no" aria-label="Passer">✕</button>
       <button class="act sm" id="star" aria-label="Coup de cœur">★</button>
       <button class="act lg like" id="yes" aria-label="J'aime">♥</button></div>`;
-  v.querySelectorAll('.filters .chip').forEach(c=>c.onclick=()=>{ state.filter=c.textContent; discover(); });
+  v.querySelector('#fb').onclick=()=>filtersSheet(discover);
   v.querySelector('#no').onclick=()=>decide('pass');
   v.querySelector('#yes').onclick=()=>decide('like');
   v.querySelector('#star').onclick=()=>decide('star');
-  try{ state.deck=(await API.discover()).filter(p=>state.filter==='Toutes'||p.looking===state.filter); }
+  try{ state.deck=applyFilters(await API.discover()); }
   catch(e){ state.deck=[]; toast(frErr(e.message)); }
   renderDeck();
 }
 function renderDeck(){
   const deck=root.querySelector('#deck'); if(!deck) return; deck.innerHTML='';
-  if(!state.deck.length){ deck.innerHTML=`<div class="empty">${logo('')}<h3>Tu as vu tout le monde</h3><p class="sub">De nouvelles filles s'inscrivent tous les jours. Reviens un peu plus tard ♡</p></div>`;
+  if(!state.deck.length){ deck.innerHTML=`<div class="empty">${logo('')}<h3>Tu as vu tout le monde</h3><p class="sub">De nouvelles filles s'inscrivent tous les jours. Reviens plus tard, ou élargis tes filtres.</p></div>`;
     deck.querySelector('svg').style.cssText='width:90px;height:90px'; return; }
   state.deck.slice(0,3).reverse().forEach((p,i,arr)=>{
     const depth=arr.length-1-i; const c=document.createElement('article'); c.className='card';
@@ -107,22 +106,53 @@ async function messagesView(){
   const l=v.querySelector('#l'); if(!l) return;
   if(!m.length){ l.innerHTML='<p class="sub" style="padding:12px 4px">Tes conversations apparaîtront ici dès que tu auras un match.</p>'; return; }
   m.sort((a,b)=>(b.last?.created_at||'').localeCompare(a.last?.created_at||''));
-  l.innerHTML=m.map(({p,last},i)=>`<button class="row" data-i="${i}">${avatar(p)}<div><b>${esc(p.name)}</b><p>${last?esc(last.body):'Nouveau match ! Dis-lui bonjour 👋'}</p></div>${last?`<time>${hhmm(last.created_at)}</time>`:''}</button>`).join('');
+  l.innerHTML=m.map(({p,last},i)=>`<button class="row" data-i="${i}">${avatar(p)}<div><b>${esc(p.name)}</b><p>${last?(last.kind==='photo'?'📷 Photo':last.kind==='audio'?'🎤 Message vocal':esc(last.body)):'Nouveau match ! Dis-lui bonjour 👋'}</p></div>${last?`<time class="${last.sender===p.id&&last.created_at>seen.get(p.id)?'new':''}">${hhmm(last.created_at)}</time>`:''}</button>`).join('');
   l.querySelectorAll('.row').forEach(b=>b.onclick=()=>chat(m[+b.dataset.i].p));
 }
 async function chat(p){
-  page(`<div class="page" style="padding-bottom:0"><div class="top"><button class="back" id="bk" aria-label="Retour">←</button>${avatar(p)}<div style="flex:1;min-width:0"><b style="font-family:var(--display);font-size:20px">${esc(p.name)}</b><div class="meta">${esc(p.city||'')}</div></div><button class="back" id="more" aria-label="Signaler ou bloquer">⋯</button></div>
+  page(`<div class="page" style="padding-bottom:0"><div class="top"><button class="back" id="bk" aria-label="Retour">←</button>${avatar(p)}<div style="flex:1;min-width:0"><b style="font-family:var(--display);font-size:22px">${esc(p.name)}</b> ${p.verified?VERIF_ICON:''}<div class="meta">${esc(p.city||'')}</div></div><button class="back" id="more" aria-label="Signaler ou bloquer">⋯</button></div>
     <div class="chat" id="c"></div>
-    <form class="send" id="f"><input class="input" id="t" maxlength="1000" placeholder="Écris-lui un petit mot…" autocomplete="off"><button class="act like" aria-label="Envoyer">➤</button></form></div>`);
+    <div class="recbar" id="rb" hidden><span class="dot"></span><span id="rt">0:00</span><button class="link" id="rc" type="button">Annuler</button><button class="btn pink" id="rs" type="button">Envoyer</button></div>
+    <form class="send" id="f">
+      <label class="act sm2" for="pic" aria-label="Envoyer une photo">📷<input id="pic" type="file" accept="image/*" hidden></label>
+      <input class="input" id="t" maxlength="1000" placeholder="Écris-lui un petit mot…" autocomplete="off">
+      <button class="act sm2" id="mic" type="button" aria-label="Enregistrer un message vocal">🎤</button>
+      <button class="act like" aria-label="Envoyer">➤</button></form></div>`);
+  state.chatWith=p.id; seen.set(p.id);
   root.querySelector('#bk').onclick=()=>main('messages');
   root.querySelector('#more').onclick=()=>safety(p,()=>main('messages'));
-  const box=root.querySelector('#c'); let count=-1;
-  const load=async()=>{ try{ const ms=await API.messages(p.id); if(ms.length===count) return; count=ms.length;
-      box.innerHTML=`<div class="bub sys">vous vous êtes plu ♡</div>`+ms.map(m=>`<div class="bub ${m.mine?'me':'her'}">${esc(m.body)}</div>`).join('');
-      box.scrollTop=box.scrollHeight; }catch(e){} };
+  const box=root.querySelector('#c'); let sig='';
+  const urls={};
+  const load=async()=>{ try{ const ms=await API.messages(p.id); const s=ms.length+':'+(ms[ms.length-1]?.created_at||''); if(s===sig) return; sig=s;
+      const need=ms.filter(m=>m.media_path&&!urls[m.media_path]).map(m=>m.media_path);
+      if(need.length) Object.assign(urls,await API.mediaUrls(need));
+      box.innerHTML=`<div class="bub sys">vous vous êtes plu</div>`+ms.map(m=>{
+        const cls=`bub ${m.mine?'me':'her'}`;
+        if(m.kind==='photo') return `<div class="${cls} media"><img src="${esc(urls[m.media_path]||'')}" alt="Photo" loading="lazy"></div>`;
+        if(m.kind==='audio') return `<div class="${cls} media"><audio controls preload="metadata" src="${esc(urls[m.media_path]||'')}"></audio></div>`;
+        return `<div class="${cls}">${esc(m.body)}</div>`; }).join('');
+      box.scrollTop=box.scrollHeight; seen.set(p.id); }catch(e){} };
   await load(); state.poll=setInterval(load,3000);
+  const sendMedia=async(kind,blob)=>{ toast(kind==='photo'?'Envoi de la photo…':'Envoi du vocal…');
+    try{ await API.sendMedia(p.id,kind,blob); sig=''; await load(); }catch(err){ toast(frErr(err.message)); } };
+  root.querySelector('#pic').onchange=e=>{ const f=e.target.files[0]; if(f) sendMedia('photo',f); e.target.value=''; };
+  root.querySelector('#mic').onclick=async()=>{
+    if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder) return toast('Ton téléphone ne permet pas d\'enregistrer ici.');
+    let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ return toast('Micro refusé. Autorise-le dans les réglages de ton téléphone.'); }
+    const type=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';
+    const rec=new MediaRecorder(stream,type?{mimeType:type}:undefined); const chunks=[]; let keep=false, t0=Date.now();
+    state.rec=rec; rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+    const bar=root.querySelector('#rb'), form=root.querySelector('#f'); bar.hidden=false; form.hidden=true;
+    const tick=setInterval(()=>{ const s=Math.floor((Date.now()-t0)/1000); const rt=root.querySelector('#rt'); if(rt) rt.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; if(s>=60) stop(true); },250);
+    const stop=k=>{ keep=k; clearInterval(tick); if(rec.state!=='inactive') rec.stop(); };
+    rec.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); state.rec=null; clearInterval(tick);
+      if(root.querySelector('#rb')){ root.querySelector('#rb').hidden=true; root.querySelector('#f').hidden=false; }
+      if(keep&&chunks.length) sendMedia('audio',new Blob(chunks,{type:rec.mimeType||type||'audio/mp4'})); };
+    root.querySelector('#rc').onclick=()=>stop(false); root.querySelector('#rs').onclick=()=>stop(true);
+    rec.start(250);
+  };
   root.querySelector('#f').onsubmit=async e=>{ e.preventDefault(); const t=root.querySelector('#t'); const body=t.value.trim(); if(!body) return; t.value='';
-    try{ await API.send(p.id,body); await load(); }catch(err){ toast(frErr(err.message)); t.value=body; } };
+    try{ await API.send(p.id,body); sig=''; await load(); }catch(err){ toast(frErr(err.message)); t.value=body; } };
 }
 function safety(p,after){
   const v=document.createElement('div'); v.className='veil';
@@ -153,11 +183,19 @@ function profileView(){
     <p class="note" style="margin-bottom:14px">${many?'touche la photo pour voir les suivantes':'voilà ce que les autres voient'}</p>
     <div class="mecard"><article class="card">${cardHTML({...p,km:0})}</article></div>
     ${p.prompt_a?`<div class="row" style="margin-top:22px;display:block"><b>${esc(p.prompt_q)}</b><p style="white-space:normal;font-family:var(--display);font-style:italic;font-size:22px;color:var(--text)">${esc(p.prompt_a)}</p></div>`:''}
-    <div class="menu"><button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
+    <div class="menu">
+      <button class="row" id="vrf">${VERIF_ICON}<div><b>${p.verified?'Profil vérifié':'Faire vérifier mon profil'}</b><p>${p.verified?'Ton badge doré est visible':'Un selfie, et tu as le badge doré'}</p></div></button>
+      <button class="row" id="ntf"><span class="ico">🔔</span><div><b>Notifications</b><p>${ls.get('velours-push',false)?'Activées sur ce téléphone':'Être prévenue des matchs et messages'}</p></div></button>
+      <button class="row" id="adm" hidden><span class="ico">🛡️</span><div><b>Modération</b><p>Signalements, vérifications, membres</p></div></button>
+      <button class="btn full" id="edit2">Modifier mon profil</button><button class="btn full" id="out">Me déconnecter</button></div></div>`;
   photoTap(v.querySelector('.mecard .card'),p);
   const edit=()=>{ state.draft={...blankDraft(),...p,photos:[...(p.photos||[])],interests:[...(p.interests||[])]}; state.step=1; state.editing=true; onboarding(); };
   v.querySelector('#edit').onclick=edit; v.querySelector('#edit2').onclick=edit;
   v.querySelector('#out').onclick=async()=>{ await API.signOut(); state.me=null; welcome(); };
+  v.querySelector('#vrf').onclick=()=>verifyScreen();
+  v.querySelector('#ntf').onclick=()=>enablePush();
+  v.querySelector('#adm').onclick=()=>adminScreen();
+  API.isAdmin().then(a=>{ const b=v.querySelector('#adm'); if(b) b.hidden=!a; });
 }
 
 intro();
