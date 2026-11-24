@@ -111,3 +111,7 @@ Object.assign(Online, {
   // Le profil revient dans la pile ; le prochain choix remplace le « Bof » (et on l'efface si la base l'autorise)
   async unlike(id){ try{ await sb.from('likes').delete().eq('liker',me).eq('likee',id).eq('kind','pass'); }catch(e){} }
 });
+
+/* ---------- v6 : photos des profils de démo ---------- */
+Demo.adminSetPhotos = async function(){};
+Online.adminSetPhotos = async function(uid,urls){ this.check(await sb.rpc('admin_set_demo_photos',{uid,urls})); };
