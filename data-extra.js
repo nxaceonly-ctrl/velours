@@ -91,3 +91,23 @@ Object.assign(Online, {
     let last=0; return { send(){ const n=Date.now(); if(n-last<2000) return; last=n; ch.send({type:'broadcast',event:'typing',payload:{from:me}}); }, stop(){ sb.removeChannel(ch); } };
   }
 });
+
+/* ---------- v4 : revoir les profils « Bof » ---------- */
+Object.assign(Demo, {
+  async passed(){ const d=this.db(); const ids=new Set(d.likes.filter(l=>l.liker===d.session&&l.kind==='pass').map(l=>l.likee));
+    const bl=new Set(d.blocks.map(b=>b.blocked)); return this.all().filter(p=>ids.has(p.id)&&!bl.has(p.id)); },
+  async unlike(id){ const d=this.db(); d.likes=d.likes.filter(l=>!(l.liker===d.session&&l.likee===id)); this.save(d); }
+});
+const demoLike = Demo.like;
+Demo.like = async function(id,kind){ await this.unlike(id); return demoLike.call(this,id,kind); };
+Object.assign(Online, {
+  async passed(){
+    const ids=this.check(await sb.from('likes').select('likee').eq('liker',me).eq('kind','pass')).map(l=>l.likee);
+    if(!ids.length) return [];
+    const hide=await this.blocked();
+    const ps=this.check(await sb.from('profiles').select('*').in('id',ids));
+    let km={}; try{ (this.check(await sb.rpc('distances'))||[]).forEach(r=>km[r.id]=r.km); }catch(e){}
+    return ps.filter(p=>!hide.has(p.id)&&!p.banned).map(p=>({...p,km:km[p.id]})); },
+  // Le profil revient dans la pile ; le prochain choix remplace le « Bof » (et on l'efface si la base l'autorise)
+  async unlike(id){ try{ await sb.from('likes').delete().eq('liker',me).eq('likee',id).eq('kind','pass'); }catch(e){} }
+});
