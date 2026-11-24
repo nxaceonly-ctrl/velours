@@ -105,7 +105,8 @@ async function adminScreen(tab='reports'){
       l.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const x=r[+b.dataset.i]; act(()=>API.adminUnblock(x.blocker,x.blocked),'Blocage retiré'); }); }
     if(tab==='members'){ const r=await API.adminMembers();
       l.innerHTML=`<p class="sub" style="margin-bottom:10px">${r.length} membre${r.length>1?'s':''}</p>`+r.map((p,i)=>`<div class="row">${avatar(p)}<div><b>${esc(p.name)}, ${age(p.birthdate)}</b> ${p.verified?VERIF_ICON:''}${p.banned?' <span class="tag-ban">bannie</span>':''}<p>${esc(p.city||'')}</p></div>
-        <button class="chip ${p.banned?'':'danger'}" data-i="${i}">${p.banned?'Débannir':'Bannir'}</button></div>`).join('');
+        ${isDemo(p)?`<button class="chip on" data-ph="${i}">📷 Photos</button>`:''}<button class="chip ${p.banned?'':'danger'}" data-i="${i}">${p.banned?'Débannir':'Bannir'}</button></div>`).join('');
+      l.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>demoPhotosSheet(r[+b.dataset.ph],()=>adminScreen('members')));
       l.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const p=r[+b.dataset.i]; act(()=>API.adminBan(p.id,!p.banned),p.banned?'Profil débanni':'Profil banni'); }); }
   }catch(e){ l.innerHTML=`<div class="err">${esc(frErr(e.message))}</div>`; }
 }
@@ -149,4 +150,26 @@ function startLive(){
     if(!like||like.kind==='pass') return;
     try{ const m=await API.matches(); const x=m.find(y=>y.p.id===like.liker); if(x){ toast(`✨ Nouveau match avec ${x.p.name} !`); refreshBadges(); } }catch(e){}
   });
+}
+
+/* ---------- v6 : changer les photos des profils de démo (admin) ---------- */
+const isDemo = p => String(p.id).startsWith('5eed0000-');
+function demoPhotosSheet(p, onDone){
+  let photos=[...(p.photos||[])]; let busyUp=false;
+  const v=document.createElement('div'); v.className='veil';
+  const draw=()=>{ v.innerHTML=`<div class="sheet" role="dialog" aria-label="Photos de ${esc(p.name)}">
+    <h3>Photos de ${esc(p.name)}</h3><p class="sub" style="margin:0">Touche une photo pour la remplacer. Photos non explicites uniquement.</p>
+    <div class="dslots">${[0,1,2].map(i=>`<button class="dslot" data-s="${i}" style="${photos[i]?`background-image:url('${esc(photos[i])}')`:''}">${photos[i]?'<span>Changer</span>':'<span>+ Ajouter</span>'}</button>`).join('')}</div>
+    <input type="file" accept="image/*" id="dfile" hidden>
+    <button class="btn pink full" id="dok">Fermer</button></div>`;
+    let slot=0; const f=v.querySelector('#dfile');
+    v.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ if(busyUp) return; slot=Math.min(+b.dataset.s,photos.length); f.click(); });
+    f.onchange=async()=>{ const file=f.files[0]; if(!file) return; busyUp=true; toast('Envoi de la photo…');
+      try{ const url=await API.uploadPhoto(file); const next=[...photos]; next[slot]=url;
+        await API.adminSetPhotos(p.id,next); photos=next; p.photos=next; toast('Photo changée ✓'); draw(); }
+      catch(e){ toast(frErr(e.message)); } busyUp=false; };
+    v.querySelector('#dok').onclick=()=>{ v.remove(); onDone&&onDone(); };
+  };
+  draw(); document.body.appendChild(v);
+  v.addEventListener('click',e=>{ if(e.target===v){ v.remove(); onDone&&onDone(); } });
 }
