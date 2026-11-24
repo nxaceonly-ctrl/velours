@@ -34,21 +34,22 @@ async function discover(){
   const v=root.querySelector('#view');
   v.innerHTML=`<button class="filterbar" id="fb"><span>⚙︎ Filtres</span><small>${esc(filterSummary())}</small></button>
     <div class="deck" id="deck"></div>
-    <div class="actions"><button class="act lg" id="no" aria-label="Passer">✕</button>
+    <div class="actions"><button class="act sm" id="back" aria-label="Revoir les profils Bof">↺</button><button class="act lg" id="no" aria-label="Passer">✕</button>
       <button class="act sm" id="star" aria-label="Coup de cœur">★</button>
       <button class="act lg like" id="yes" aria-label="J'aime">♥</button></div>`;
   v.querySelector('#fb').onclick=()=>filtersSheet(discover);
   v.querySelector('#no').onclick=()=>decide('pass');
   v.querySelector('#yes').onclick=()=>decide('like');
   v.querySelector('#star').onclick=()=>decide('star');
+  v.querySelector('#back').onclick=rewind;
   try{ state.deck=applyFilters(await API.discover()); }
   catch(e){ state.deck=[]; toast(frErr(e.message)); }
   renderDeck();
 }
 function renderDeck(){
   const deck=root.querySelector('#deck'); if(!deck) return; deck.innerHTML='';
-  if(!state.deck.length){ deck.innerHTML=`<div class="empty">${logo('')}<h3>Tu as vu tout le monde</h3><p class="sub">De nouvelles filles s'inscrivent tous les jours. Reviens plus tard, ou élargis tes filtres.</p></div>`;
-    deck.querySelector('svg').style.cssText='width:90px;height:90px'; return; }
+  if(!state.deck.length){ deck.innerHTML=`<div class="empty">${logo('')}<h3>Tu as vu tout le monde</h3><p class="sub">De nouvelles filles s'inscrivent tous les jours. Reviens plus tard, ou élargis tes filtres.</p><button class="btn" id="seebof">↺ Revoir les profils « Bof »</button></div>`;
+    deck.querySelector('svg').style.cssText='width:90px;height:90px'; deck.querySelector('#seebof').onclick=showBof; return; }
   state.deck.slice(0,3).reverse().forEach((p,i,arr)=>{
     const depth=arr.length-1-i; const c=document.createElement('article'); c.className='card';
     c.innerHTML=cardHTML(p,{menu:depth===0})+'<div class="stamp yes">J\'aime</div><div class="stamp no">Bof</div><div class="stamp star">Coup de cœur</div>';
@@ -78,7 +79,23 @@ async function decide(kind){
   const x=kind==='pass'?-1:1;
   c.style.transform=kind==='star'?'translateY(-110%) rotate(-6deg)':`translateX(${x*130}%) rotate(${x*24}deg)`; c.style.opacity='0';
   let match=false; try{ match=await API.like(p.id,kind); }catch(e){ toast(frErr(e.message)); }
+  state.last={p,kind};
   setTimeout(()=>{ busy=false; state.deck.shift(); renderDeck(); if(match) showMatch(p); },350);
+}
+/* Revenir en arrière : annule le dernier « Bof », sinon montre tous les profils mis dans « Bof » */
+async function rewind(){
+  if(busy) return;
+  const l=state.last;
+  if(l && l.kind==='pass'){ state.last=null; try{ await API.unlike(l.p.id); }catch(e){}
+    state.deck.unshift(l.p); renderDeck(); toast(`${l.p.name} est revenue ↺`); return; }
+  showBof();
+}
+async function showBof(){
+  let list=[]; try{ list=await API.passed(); }catch(e){ return toast(frErr(e.message)); }
+  if(!list.length) return toast('Aucun profil dans « Bof » pour l\'instant.');
+  const ids=new Set(list.map(p=>p.id));
+  state.deck=list.concat(state.deck.filter(p=>!ids.has(p.id))); state.last=null; renderDeck();
+  toast(`${list.length} profil${list.length>1?'s':''} « Bof » à revoir ↺`);
 }
 function showMatch(p){
   const el=document.createElement('div'); el.className='match';
